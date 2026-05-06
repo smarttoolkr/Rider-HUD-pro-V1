@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="HUD">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://dapi.kakao.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://dapi.kakao.com https://*.kakao.com https://api.open-meteo.com; media-src 'self';">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="stylesheet" href="css/style.css">
+    <title>HUD for Riders</title>
+
+    <!-- 외부 라이브러리 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js" crossorigin="anonymous"></script>
+    <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=59ca516d0d71c9fc4d63a4ee11503c9d&libraries=services,visualization&autoload=false"></script>
+</head>
+<body>
+
+<!-- ============================================================
+     1. 스플래시 (z-index 9999)
+============================================================ -->
+<div id="splash" class="splash">
+    <div class="splash-hud">HUD</div>
+    <div class="splash-sub">for Riders</div>
+</div>
+
+<!-- ============================================================
+     2. 동의 화면 (z-index 8500)
+============================================================ -->
+<div id="consentScreen" class="consent-screen">
+    <div class="consent-inner">
+        <div class="consent-logo">HUD</div>
+        <div class="consent-sub">for Riders</div>
+        <div class="consent-section">
+            <div class="consent-section-title">📍 위치정보 수집 · 이용 안내</div>
+            <div class="consent-section-body">
+                이 앱은 정밀 위치(GPS) 정보를 사용하여 저장된 장소와의 거리를 계산하고, 근접 시 메모를 음성으로 안내합니다.<br><br>
+                <b style="color:#fff;">• 수집 항목:</b> 위도, 경도 (GPS 정밀 위치)<br>
+                <b style="color:#fff;">• 이용 목적:</b> 장소 정렬, 근접 알림, GPS 핀 저장, 날씨 조회, 주소 자동완성<br>
+                <b style="color:#fff;">• 수집 시점:</b> 앱 포그라운드 실행 중에만 (백그라운드 수집 없음)<br>
+                <b style="color:#fff;">• 저장 방식:</b> 기기 내 IndexedDB + AES-256 암호화<br>
+                <b style="color:#fff;">• 외부 전송:</b> Open-Meteo(날씨), 카카오 지도(주소)에 좌표 전송<br>
+                &nbsp;&nbsp;&nbsp;(외부 서비스는 좌표를 수집·저장하지 않음)<br>
+                <b style="color:#fff;">• 보유 기간:</b> 앱 사용 중 보유, 데이터 삭제 또는 앱 삭제 시 즉시 파기<br>
+                <b style="color:#fff;">• 동의 거부 시:</b> 위치 기반 기능 이용 불가
+            </div>
+        </div>
+        <div class="consent-section">
+            <div class="consent-section-title">📋 이용약관 요약</div>
+            <div class="consent-section-body">
+                • 이 앱은 라이더 본인이 직접 측정·수집한 데이터만 사용합니다<br>
+                • 모든 데이터는 기기 내에만 저장되며 개발자는 접근할 수 없습니다<br>
+                • 타인의 개인정보를 무단으로 수집·저장하는 용도로 사용할 수 없습니다<br>
+                • 메모 내용의 관리 책임은 사용자 본인에게 있습니다<br>
+                • 운전 중 앱 조작은 도로교통법 위반이며 금지됩니다<br>
+                • 문의: <a href="mailto:smart.tool.kr@gmail.com" style="color:var(--green);">smart.tool.kr@gmail.com</a><br><br>
+                <a style="color:var(--green);text-decoration:underline;cursor:pointer;font-size:0.7rem;" onclick="window.open('terms.html')">이용약관 전문 보기</a>&nbsp;&nbsp;
+                <a style="color:var(--green);text-decoration:underline;cursor:pointer;font-size:0.7rem;" onclick="window.open('privacy.html')">개인정보 처리방침 보기</a>
+            </div>
+        </div>
+        <div class="consent-checks">
+            <div class="consent-check">
+                <input type="checkbox" id="chkLocation" onchange="checkConsent()">
+                <label for="chkLocation">위치정보 수집 · 이용에 동의합니다 (필수)</label>
+            </div>
+            <div class="consent-check">
+                <input type="checkbox" id="chkPrivacy" onchange="checkConsent()">
+                <label for="chkPrivacy">개인정보 처리방침에 동의합니다 (필수)</label>
+            </div>
+            <div class="consent-check">
+                <input type="checkbox" id="chkTerms" onchange="checkConsent()">
+                <label for="chkTerms">이용약관에 동의합니다 (필수)</label>
+            </div>
+        </div>
+        <button id="consentBtn" class="consent-btn inactive" onclick="acceptConsent()">동의하고 시작하기</button>
+    </div>
+</div>
+
+<!-- ============================================================
+     3. PIN 잠금 화면 (z-index 8000)
+============================================================ -->
+<div id="pinScreen" class="pin-screen">
+    <div class="pin-logo">HUD</div>
+    <div class="pin-subtitle" id="pinSubtitle">PIN 입력</div>
+    <div class="pin-dots">
+        <div class="pin-dot" id="dot0"></div>
+        <div class="pin-dot" id="dot1"></div>
+        <div class="pin-dot" id="dot2"></div>
+        <div class="pin-dot" id="dot3"></div>
+        <div class="pin-dot" id="dot4"></div>
+        <div class="pin-dot" id="dot5"></div>
+    </div>
+    <div class="pin-pad">
+        <div class="pin-key" onclick="HudCommon.pinInput(1)">1</div>
+        <div class="pin-key" onclick="HudCommon.pinInput(2)">2</div>
+        <div class="pin-key" onclick="HudCommon.pinInput(3)">3</div>
+        <div class="pin-key" onclick="HudCommon.pinInput(4)">4</div>
+        <div class="pin-key" onclick="HudCommon.pinInput(5)">5</div>
+        <div class="pin-key" onclick="HudCommon.pinInput(6)">6</div>
+        <div class="pin-key" onclick="HudCommon.pinInput(7)">7</div>
+        <div class="pin-key" onclick="HudCommon.pinInput(8)">8</div>
+        <div class="pin-key" onclick="HudCommon.pinInput(9)">9</div>
+        <div class="pin-key fn" onclick="HudCommon.pinReset(showAlert)">PIN 초기화</div>
+        <div class="pin-key" onclick="HudCommon.pinInput(0)">0</div>
+        <div class="pin-key fn" onclick="HudCommon.pinDelete()">⌫</div>
+    </div>
+    <div class="pin-msg" id="pinMsg"></div>
+</div>
+
+
+<!-- ============================================================
+     4. 3탭 SHELL
+     ← 히트맵(0) · HUD(1) · 매니저(2) →
+============================================================ -->
+<div class="shell">
+    <div id="tabTrack" class="tab-track" data-tab="1">
+
+        <!-- ── 탭 0: 히트맵 (heatmap.js가 채움) ── -->
+        <div class="tab-panel" id="heatmapTab">
+            <div class="container">
+                <div class="header-panel">
+                    <div class="hud-logo" style="font-size:1.5rem;">HEATMAP</div>
+                    <div style="font-size:0.7rem;color:var(--dim);margin-top:4px;letter-spacing:2px;">전략 지도</div>
+                </div>
+                <div id="heatmapContainer" style="flex:1;display:flex;align-items:center;justify-content:center;color:var(--dim);">
+                    <div style="text-align:center;">
+                        <div style="font-size:3rem;margin-bottom:10px;">🗺️</div>
+                        <div style="font-size:0.85rem;">히트맵 로딩 중...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── 탭 1: HUD (메인) ── -->
+        <div class="tab-panel" id="hudTab">
+
+            <!-- ① 고정 상단 (스크롤 밖) -->
+            <div class="hud-fixed-top">
+
+                <!-- 헤더 -->
+                <div class="header-panel">
+                    <div class="header-center">
+                        <div class="hud-logo">HUD</div>
+                        <div class="date-weather-row">
+                            <span id="dateDisplay"></span>
+                            <span id="dateSep" class="date-sep" style="display:none;">|</span>
+                            <span id="weatherDisplay"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ② 타이머 영역 (hudpro8 스타일) -->
+                <div class="hud-timer-area">
+                    <!-- 윗줄: WORK/MISSION 뷰 토글 + START/STOP -->
+                    <div class="hud-timer-controls">
+                        <div class="mode-group">
+                            <button id="modeWorkBtn" class="mode-btn active-work"
+                                    onclick="HudHUD.setTimerView('work')">WORK</button>
+                            <button id="modeMissionBtn" class="mode-btn"
+                                    onclick="HudHUD.setTimerView('mission')">MISSION</button>
+                        </div>
+                        <button id="toggleBtn" class="hud-start-btn btn-start"
+                                onclick="HudHUD.handleWorkToggle()">START</button>
+                    </div>
+                    <!-- 아랫줄: RESET + 타이머 숫자 -->
+                    <div class="hud-timer-display">
+                        <button id="resetTimerBtn" class="hud-reset-btn"
+                                onclick="HudHUD.confirmResetTimer()" aria-label="시간·건수 초기화">
+                            ↻ <span id="resetBtnLabel">WORK<br>RESET</span>
+                        </button>
+                        <div id="workTimer" class="hud-timer-val">00:00:00</div>
+                    </div>
+                </div>
+            </div><!-- /hud-fixed-top -->
+
+            <!-- ③ 스크롤 영역 -->
+            <div class="hud-scroll-area">
+                <div class="container">
+
+                    <!-- ④ 속도 카드 (hudpro8 스타일 히어로) -->
+                    <div class="speed-card">
+                        <!-- 좌상단: 배달 상태 -->
+                        <div id="statusLabel" class="hero-status-badge">대기 중</div>
+                        <!-- 우상단: 미션 배지 -->
+                        <div id="missionBadge" class="mission-badge-top" style="display:none;">⚡ MISSION</div>
+                        <!-- 좌하단: 픽업 진행 -->
+                        <div id="pickupIndicator" class="pickup-area">
+                            <span class="pickup-indicator">🛍️ 픽업 중</span>
+                            <span class="pickup-time" id="pickupTimeText">00:00</span>
+                        </div>
+                        <!-- 중앙: 속도 -->
+                        <div id="speedNum" class="speed-num">0</div>
+                        <div class="speed-unit-label">KM/H</div>
+                        <!-- 하단: 30m 이내 근접 장소 -->
+                        <div id="heroPlaceArea" class="speed-card-place hidden">
+                            <div id="heroPlaceName" class="place-name"></div>
+                            <div class="place-memo-marquee">
+                                <span id="heroMemo"></span>
+                            </div>
+                        </div>
+                        <div id="heroEmptyArea" class="hidden"></div>
+                    </div>
+
+                    <!-- ⑤ 주차 층수 (가로 스크롤, 7개 유지) -->
+                    <div class="floor-scroll-wrap">
+                        <div class="floor-scroll" id="floorScroll">
+                            <div class="floor-btn" id="f1"    onclick="HudHUD.handleFloorToggle('f1')">1F</div>
+                            <div class="floor-btn" id="lobby" onclick="HudHUD.handleFloorToggle('lobby')">L</div>
+                            <div class="floor-btn" id="b1"    onclick="HudHUD.handleFloorToggle('b1')">B1</div>
+                            <div class="floor-btn" id="b2"    onclick="HudHUD.handleFloorToggle('b2')">B2</div>
+                            <div class="floor-btn" id="b3"    onclick="HudHUD.handleFloorToggle('b3')">B3</div>
+                            <div class="floor-btn" id="b4"    onclick="HudHUD.handleFloorToggle('b4')">B4</div>
+                            <div class="floor-btn" id="b5"    onclick="HudHUD.handleFloorToggle('b5')">B5</div>
+                        </div>
+                        <div class="floor-fade-right"></div>
+                    </div>
+
+                    <!-- ⑥ 카운터 카드 -->
+                    <div class="counter-card" onclick="HudHUD.toggleCountMode()">
+                        <button class="count-adjust-btn"
+                                onclick="event.stopPropagation(); HudHUD.adjustCount(-1);">−</button>
+                        <div class="count-block">
+                            <div id="heroCountNum" class="count-num">0</div>
+                            <div id="heroCountLabel" class="count-label">Total Count</div>
+                        </div>
+                        <button class="count-adjust-btn"
+                                onclick="event.stopPropagation(); HudHUD.adjustCount(1);">+</button>
+                    </div>
+
+                    <!-- ⑦ 도착·픽업·드롭 -->
+                    <div class="action-3btns">
+                        <button id="btnArrive"    class="btn-arrive"
+                                onclick="HudHUD.handleArrive()">도착</button>
+                        <button id="btnPickupNew" class="btn-pickup-new"
+                                onclick="HudHUD.handlePickup()">픽업</button>
+                        <button id="btnDropNew"   class="btn-drop-new"
+                                onclick="HudHUD.handleDrop()">드롭</button>
+                    </div>
+
+                    <!-- ⑧ 현위치 저장 -->
+                    <button class="btn-locate" onclick="HudHUD.locateAndSave()">📍 현위치 저장</button>
+
+                    <!-- ⑨ 입력 영역 -->
+                    <div class="input-panel">
+                        <input type="text" id="placeName" class="place-input"
+                               placeholder="장소명, 매장명, 기타 지명 입력">
+                        <div class="input-wrap">
+                            <input type="text" id="placeMemo" class="place-input" placeholder=""
+                                   onfocus="document.getElementById('scrollPh').classList.add('hidden')"
+                                   onblur="if(!this.value)document.getElementById('scrollPh').classList.remove('hidden')">
+                            <div class="scroll-placeholder" id="scrollPh">
+                                <span>민감한 개인정보의 저장은 삼가해 주세요.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;민감한 개인정보의 저장은 삼가해 주세요.</span>
+                            </div>
+                        </div>
+                        <button class="btn-save" onclick="HudHUD.savePlace()">저장</button>
+                    </div>
+
+                    <!-- ⑩ 4버튼: 통계→미션으로 교체, 통계는 스와이프로 접근 -->
+                    <div class="action-btns">
+                        <button class="keymap-btn"    onclick="HudCommon.openKakaoMap()">지도</button>
+                        <button class="history-btn" id="missionBtn"
+                                onclick="HudHUD.toggleMission()">미션</button>
+                        <button class="emergency-btn" onclick="openEmergency()">긴급</button>
+                        <button class="settings-btn"  onclick="openSettings()">설정</button>
+                    </div>
+
+                    <!-- ⑪ 장소 목록 -->
+                    <div id="placeListArea" class="place-list-area">
+                        <div id="placeList"></div>
+                    </div>
+
+                    <div class="copyright">HUD for Riders v1.0 · © 2026 Smart Tool Korea</div>
+                </div>
+            </div><!-- /hud-scroll-area -->
+
+        </div><!-- /hudTab -->
+
+        <!-- ── 탭 2: 매니저 (manager.js가 채움) ── -->
+        <div class="tab-panel" id="managerTab">
+            <div class="container">
+                <div class="header-panel">
+                    <div class="hud-logo" style="font-size:1.5rem;">MANAGER</div>
+                    <div style="font-size:0.7rem;color:var(--dim);margin-top:4px;letter-spacing:2px;">통계 · 수익</div>
+                </div>
+                <div id="managerContainer" style="flex:1;display:flex;align-items:center;justify-content:center;color:var(--dim);">
+                    <div style="text-align:center;">
+                        <div style="font-size:3rem;margin-bottom:10px;">📊</div>
+                        <div style="font-size:0.85rem;">매니저 로딩 중...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 스와이프 인디케이터 -->
+    <div class="swipe-hint">
+        <div class="swipe-dot" id="dot-tab-0"></div>
+        <div class="swipe-dot active" id="dot-tab-1"></div>
+        <div class="swipe-dot" id="dot-tab-2"></div>
+    </div>
+</div>
+
+
+<!-- ============================================================
+     5. 글로벌 페이지: 설정 (z-index 500)
+============================================================ -->
+<div id="settingsPage" class="settings-page">
+    <div class="settings-header">
+        <button class="settings-back" onclick="closeSettings()">← 돌아가기</button>
+        <div class="settings-title">⚙️ 설정</div>
+        <div style="width:70px;"></div>
+    </div>
+
+    <!-- 🔊 음성 -->
+    <div class="settings-section">
+        <div class="settings-section-title">🔊 음성</div>
+        <div class="settings-row" style="flex-direction:column;align-items:stretch;">
+            <div>
+                <div class="settings-row-label">말하기 속도</div>
+                <div class="settings-row-desc">메모의 숫자 안내 속도</div>
+            </div>
+            <div class="settings-preset-grid">
+                <button class="settings-preset-btn" data-rate="0.7"  onclick="setTtsRate(0.7)">느리게</button>
+                <button class="settings-preset-btn" data-rate="0.85" onclick="setTtsRate(0.85)">보통</button>
+                <button class="settings-preset-btn" data-rate="0.95" onclick="setTtsRate(0.95)">빠르게</button>
+                <button class="settings-preset-btn" data-rate="1.15" onclick="setTtsRate(1.15)">매우빠르게</button>
+            </div>
+        </div>
+        <div class="settings-row" style="flex-direction:column;align-items:stretch;">
+            <div>
+                <div class="settings-row-label">음성 볼륨 <span id="volumeValue" style="color:var(--green);margin-left:8px;">100%</span></div>
+            </div>
+            <input type="range" min="0" max="100" value="100" class="settings-slider" id="volumeSlider" oninput="setTtsVolume(this.value)">
+        </div>
+        <div class="settings-row">
+            <div>
+                <div class="settings-row-label">🔊 음성 테스트</div>
+                <div class="settings-row-desc">"테스트, 203동 1405호"</div>
+            </div>
+            <button class="settings-preset-btn" style="width:80px;" onclick="HudCommon.speakPlaceInfo('테스트','203동 1405호')">재생</button>
+        </div>
+    </div>
+
+    <!-- 📍 근접 알림 -->
+    <div class="settings-section">
+        <div class="settings-section-title">📍 근접 알림</div>
+        <div class="settings-row" style="flex-direction:column;align-items:stretch;">
+            <div>
+                <div class="settings-row-label">안내 거리</div>
+                <div class="settings-row-desc">이 거리 이내로 들어오면 음성 안내</div>
+            </div>
+            <div class="settings-preset-grid">
+                <button class="settings-preset-btn" data-dist="0.02" onclick="setProxDist(0.02)">20m</button>
+                <button class="settings-preset-btn" data-dist="0.03" onclick="setProxDist(0.03)">30m</button>
+                <button class="settings-preset-btn" data-dist="0.05" onclick="setProxDist(0.05)">50m</button>
+                <button class="settings-preset-btn" data-dist="0.10" onclick="setProxDist(0.10)">100m</button>
+            </div>
+        </div>
+        <div class="settings-row" style="flex-direction:column;align-items:stretch;">
+            <div>
+                <div class="settings-row-label">속도 제한</div>
+                <div class="settings-row-desc">이 속도 이하에서만 음성 안내 (고속주행 중 스팸 방지)</div>
+            </div>
+            <div class="settings-preset-grid settings-preset-grid-5">
+                <button class="settings-preset-btn" data-speed="20"  onclick="setProxSpeed(20)">20</button>
+                <button class="settings-preset-btn" data-speed="30"  onclick="setProxSpeed(30)">30</button>
+                <button class="settings-preset-btn" data-speed="40"  onclick="setProxSpeed(40)">40</button>
+                <button class="settings-preset-btn" data-speed="50"  onclick="setProxSpeed(50)">50</button>
+                <button class="settings-preset-btn" data-speed="999" onclick="setProxSpeed(999)">무제한</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🔒 보안 · 데이터 -->
+    <div class="settings-section">
+        <div class="settings-section-title">🔒 보안 · 데이터</div>
+        <button class="settings-action-btn" onclick="exportBackup()">
+            <span>💾 백업 파일 내보내기</span><span style="color:#888;font-size:0.7rem;">→</span>
+        </button>
+        <button class="settings-action-btn" onclick="document.getElementById('restoreFile').click()">
+            <span>📥 백업 파일 복원</span><span style="color:#888;font-size:0.7rem;">→</span>
+        </button>
+        <input type="file" id="restoreFile" accept=".enc" style="display:none" onchange="importBackup(event)">
+        <button class="settings-action-btn" onclick="HudCommon.lockApp()">
+            <span>🔐 즉시 잠금</span><span style="color:#888;font-size:0.7rem;">→</span>
+        </button>
+    </div>
+
+    <!-- ℹ️ 정보 -->
+    <div class="settings-section">
+        <div class="settings-section-title">ℹ️ 정보</div>
+        <div class="settings-info-row"><span>앱 버전</span><span style="color:#fff;">v1.0</span></div>
+        <div class="settings-info-row"><span>개발자</span><span style="color:#fff;">Smart Tool Korea</span></div>
+        <div class="settings-info-row"><span>이용약관</span><a href="terms.html" target="_blank">보기 →</a></div>
+        <div class="settings-info-row"><span>개인정보 처리방침</span><a href="privacy.html" target="_blank">보기 →</a></div>
+        <div class="settings-info-row"><span>피드백·문의</span><a href="mailto:smart.tool.kr@gmail.com">이메일 →</a></div>
+    </div>
+    <div style="height:30px;"></div>
+</div>
+
+
+<!-- ============================================================
+     6. 글로벌 페이지: 긴급연락처 (z-index 500)
+============================================================ -->
+<div id="emergencyPage" class="emergency-page">
+    <div class="emergency-header">
+        <button class="emergency-back" onclick="closeEmergency()">← 돌아가기</button>
+        <div class="emergency-title">🚨 긴급연락처</div>
+        <div style="width:70px;"></div>
+    </div>
+    <div class="emergency-list" id="emergencyList"></div>
+</div>
+
+
+<!-- ============================================================
+     7. 모달: 시급 계산기 (z-index 600)
+============================================================ -->
+<div id="wageOverlay" class="wage-overlay">
+    <div class="wage-popup">
+        <div class="wage-title">수고하셨습니다 💪</div>
+        <div class="wage-sub">오늘의 수입을 입력해 주세요</div>
+
+        <!-- 배달 수입 -->
+        <label class="wage-row-label">배달 수입</label>
+        <input type="number" id="wageDeliveryInput" class="wage-input" placeholder="배달 수입 (원)" oninput="calcWage()">
+
+        <!-- 미션 수입 (자동 표시) -->
+        <label class="wage-row-label">미션 수입 <span style="color:var(--dim);font-size:0.7rem;">(자동)</span></label>
+        <input type="number" id="wageMissionInput" class="wage-input wage-input-readonly" placeholder="0" readonly>
+
+        <!-- 총 수입 (자동 합산) -->
+        <label class="wage-row-label">총 수입</label>
+        <div id="wageTotalDisplay" class="wage-total-display">₩ 0</div>
+
+        <div id="wageResult" class="wage-result"></div>
+        <div class="wage-actions">
+            <button class="wage-btn wage-btn-rest" onclick="closeWagePopup(false)">휴식</button>
+            <button class="wage-btn wage-btn-save" onclick="closeWagePopup(true)">저장</button>
+        </div>
+    </div>
+</div>
+
+
+<!-- ============================================================
+     7-2. 모달: 미션 보너스 입력 (z-index 600)
+============================================================ -->
+<div id="missionBonusOverlay" class="wage-overlay">
+    <div class="wage-popup">
+        <div class="wage-title">미션 종료 🎯</div>
+        <div id="missionBonusSummary" class="wage-sub">미션 결과 확인</div>
+
+        <label class="wage-row-label">받은 보너스 금액</label>
+        <input type="number" id="missionBonusInput" class="wage-input" placeholder="0">
+
+        <div class="wage-actions">
+            <button class="wage-btn wage-btn-rest" onclick="HudHUD.closeMissionBonus(false)">건너뜀</button>
+            <button class="wage-btn wage-btn-save" onclick="HudHUD.closeMissionBonus(true)">저장</button>
+        </div>
+    </div>
+</div>
+
+
+<!-- ============================================================
+     8. 커스텀 모달 (alert/confirm 대체) (z-index 9000)
+============================================================ -->
+<div id="customModal" class="modal-overlay">
+    <div id="customModalBox" class="modal-box">
+        <div id="customModalIcon" class="modal-icon"></div>
+        <div id="customModalTitle" class="modal-title"></div>
+        <div id="customModalBody" class="modal-body"></div>
+        <div id="customModalActions" class="modal-actions"></div>
+    </div>
+</div>
+
+
+<!-- ============================================================
+     9. 앱 모듈 로드
+     순서: db → common → hud / manager / heatmap → shell
+============================================================ -->
+<script src="js/db.js"></script>
+<script src="js/common.js"></script>
+<script src="js/hud.js"></script>
+<script src="js/manager.js"></script>
+<script src="js/heatmap.js"></script>
+
+
+<!-- ============================================================
+     10. Shell 부트스트랩
+     - 스와이프 탭 전환
+     - 커스텀 모달 (showAlert)
+     - 동의 → PIN → 앱 초기화 흐름
+============================================================ -->
+<script>
+'use strict';
+
+/* ---- 커스텀 모달 ---- */
+function showAlert(opts) {
+    return new Promise(resolve => {
+        const overlay = document.getElementById('customModal');
+        const box     = document.getElementById('customModalBox');
+        const icon    = document.getElementById('customModalIcon');
+        const title   = document.getElementById('customModalTitle');
+        const body    = document.getElementById('customModalBody');
+        const actions = document.getElementById('customModalActions');
+
+        box.className   = 'modal-box ' + (opts.type || 'info');
+        icon.innerText  = opts.icon || (opts.type === 'warn' ? '⚠️' : opts.type === 'confirm' ? '❓' : 'ℹ️');
+        title.innerText = opts.title || '알림';
+        body.innerText  = opts.message || '';
+        actions.innerHTML = '';
+
+        const close = (r) => { overlay.classList.remove('open'); resolve(r); };
+
+        if (opts.type === 'confirm' || opts.type === 'warn') {
+            const cancel = document.createElement('button');
+            cancel.className = 'modal-btn modal-btn-cancel';
+            cancel.innerText = opts.cancelText || '취소';
+            cancel.onclick = () => close(false);
+            actions.appendChild(cancel);
+
+            const ok = document.createElement('button');
+            ok.className = 'modal-btn ' + (opts.type === 'warn' ? 'modal-btn-danger' : 'modal-btn-primary');
+            ok.innerText = opts.okText || '확인';
+            ok.onclick = () => close(true);
+            actions.appendChild(ok);
+        } else {
+            const ok = document.createElement('button');
+            ok.className = 'modal-btn modal-btn-primary';
+            ok.innerText = opts.okText || '확인';
+            ok.onclick = () => close(true);
+            actions.appendChild(ok);
+        }
+        overlay.classList.add('open');
+    });
+}
+
+/* ---- Shell: 3탭 스와이프 ---- */
+const HudShell = (() => {
+    const track = document.getElementById('tabTrack');
+    let currentTab = 1;
+    let touchStartX = 0, touchStartY = 0, touching = false;
+    const SWIPE_THRESHOLD = 50;   // 50px 이상 가로 이동 시 탭 전환
+
+    function swipeTo(idx) {
+        if (idx < 0 || idx > 2) return;
+        currentTab = idx;
+        track.dataset.tab = idx;
+        for (let i = 0; i < 3; i++) {
+            const dot = document.getElementById('dot-tab-' + i);
+            if (dot) dot.className = 'swipe-dot' + (i === idx ? ' active' : '');
+        }
+        // 탭 진입 훅
+        if (idx === 0 && typeof HudHeatmap !== 'undefined') HudHeatmap.onShow?.();
+        if (idx === 2 && typeof HudManager !== 'undefined') HudManager.onShow?.();
+    }
+
+    /* 터치 스와이프 */
+    track.addEventListener('touchstart', e => {
+        touching = true;
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+    }, { passive: true });
+
+    track.addEventListener('touchend', e => {
+        if (!touching) return;
+        touching = false;
+        const dx = e.changedTouches[0].clientX - touchStartX;
+        const dy = e.changedTouches[0].clientY - touchStartY;
+        // 가로 이동이 세로 이동보다 크고 임계값 초과 시
+        if (Math.abs(dx) > SWIPE_THRESHOLD && Math.abs(dx) > Math.abs(dy) * 1.5) {
+            if (dx < 0) swipeTo(currentTab + 1);   // 왼쪽으로 스와이프 → 다음 탭
+            else        swipeTo(currentTab - 1);   // 오른쪽으로 스와이프 → 이전 탭
+        }
+    }, { passive: true });
+
+    return { swipeTo, get currentTab() { return currentTab; } };
+})();
+
+/* ---- 동의 화면 ---- */
+function checkConsent() {
+    const ok = document.getElementById('chkLocation').checked
+            && document.getElementById('chkPrivacy').checked
+            && document.getElementById('chkTerms').checked;
+    document.getElementById('consentBtn').className = ok ? 'consent-btn active' : 'consent-btn inactive';
+}
+async function acceptConsent() {
+    if (!document.getElementById('chkLocation').checked
+        || !document.getElementById('chkPrivacy').checked
+        || !document.getElementById('chkTerms').checked) return;
+    await HudDB.settings.set('consent', 'agreed');
+    await HudDB.settings.set('consentDate', new Date().toISOString());
+    document.getElementById('consentScreen').classList.remove('open');
+    HudCommon.showPinScreen();
+}
+
+/* ---- 카카오맵 SDK 대기 ---- */
+function waitKakao(cb, t0) {
+    if (!t0) t0 = Date.now();
+    if (window.kakao && kakao.maps && kakao.maps.load) kakao.maps.load(cb);
+    else if (Date.now() - t0 > 30000) console.warn('[Kakao] SDK timeout');
+    else setTimeout(() => waitKakao(cb, t0), 100);
+}
+waitKakao(() => { /* SDK 준비 완료 */ });
+
+/* ---- 서비스워커 + 자동 업데이트 ---- */
+if ('serviceWorker' in navigator) {
+    let isFirstLoad = true;
+
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+            .then(reg => {
+                /* 1시간마다 새 버전 확인 */
+                setInterval(() => reg.update(), 60 * 60 * 1000);
+                /* 페이지 포커스 받을 때마다도 확인 */
+                window.addEventListener('focus', () => reg.update());
+            })
+            .catch(err => console.warn('[SW] 등록 실패:', err));
+
+        /* 새 SW가 활성화되면 자동으로 reload */
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (isFirstLoad) { isFirstLoad = false; return; }   // 첫 로드는 무시
+            console.log('[SW] 새 버전 감지 → 페이지 새로고침');
+            window.location.reload();
+        });
+
+        /* SW가 보내는 업데이트 메시지 수신 */
+        navigator.serviceWorker.addEventListener('message', event => {
+            if (event.data?.type === 'SW_UPDATED') {
+                console.log('[SW] 업데이트됨:', event.data.version);
+            }
+        });
+    });
+}
+
+/* ---- 부트스트랩: splash → consent or PIN ---- */
+window.addEventListener('load', async () => {
+    await HudDB.open();
+    await HudDB.settings.applyDefaults();
+
+    setTimeout(() => {
+        const sp = document.getElementById('splash');
+        sp.classList.add('fade-out');
+        setTimeout(async () => {
+            sp.remove();
+            const consent = await HudDB.settings.get('consent');
+            if (!consent) {
+                document.getElementById('consentScreen').classList.add('open');
+            } else {
+                HudCommon.showPinScreen();
+            }
+        }, 1200);
+    }, 2000);
+});
+
+
+/* ============================================================
+   설정 / 긴급연락처 / 시급 (스텁 — 모듈에서 구현)
+============================================================ */
+function openSettings()  { document.getElementById('settingsPage').classList.add('open'); }
+function closeSettings() { document.getElementById('settingsPage').classList.remove('open'); }
+function openEmergency()  { document.getElementById('emergencyPage').classList.add('open'); }
+function closeEmergency() { document.getElementById('emergencyPage').classList.remove('open'); }
+
+async function setTtsRate(r)   { await HudDB.settings.set('ttsRate', r);   HudCommon.setTtsSettings(r, (await HudDB.settings.get('ttsVolume'))/100 || 1); }
+async function setTtsVolume(v) { await HudDB.settings.set('ttsVolume', v); document.getElementById('volumeValue').innerText = v + '%'; HudCommon.setTtsSettings((await HudDB.settings.get('ttsRate')) || 0.85, v/100); }
+async function setProxDist(d)  { await HudDB.settings.set('proxDist', d);  }
+async function setProxSpeed(s) { await HudDB.settings.set('proxSpeed', s); }
+
+/* exportBackup / importBackup / calcWage / closeWagePopup은 manager.js에서 글로벌로 정의됨 */
+
+</script>
+
+</body>
+</html>

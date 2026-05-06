@@ -1,0 +1,64 @@
+{
+  "name": "HUD for Riders",
+  "short_name": "HUD",
+  "version": "1.1.0",
+  "description": "배달 라이더를 위한 GPS 핀 메모 · 전략 히트맵 · 수익 관리 PWA. 모든 데이터는 기기 내에 암호화 저장됩니다.",
+  "lang": "ko",
+  "dir": "ltr",
+  "categories": ["productivity", "navigation", "utilities"],
+
+  "id": "/",
+  "start_url": "/index.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+
+  "background_color": "#000000",
+  "theme_color": "#000000",
+
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+
+  "shortcuts": [
+    {
+      "name": "히트맵",
+      "short_name": "히트맵",
+      "description": "전략 히트맵 보기",
+      "url": "/index.html#heatmap",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "매니저",
+      "short_name": "통계",
+      "description": "수익·통계 보기",
+      "url": "/index.html#manager",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    }
+  ],
+
+  "prefer_related_applications": false
+}

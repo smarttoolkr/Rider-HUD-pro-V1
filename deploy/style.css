@@ -1,0 +1,525 @@
+/* ============================================================
+   HUD for Riders — style.css (완전판 v3)
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Noto+Sans+KR:wght@400;700;900&display=swap');
+
+:root {
+    --green:#00ff41; --bg:#000000; --card:#0d0d0d; --border:#1a1a1a;
+    --text:#cccccc; --orange:#f39c12; --red:#ff3e3e; --dim:#555555; --yellow:#FEE500;
+    --font-mono:'Share Tech Mono',monospace; --font-kr:'Noto Sans KR',sans-serif;
+    --radius-sm:8px; --radius-md:12px; --radius-lg:16px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0;}
+body{background-color:var(--bg);color:#fff;font-family:var(--font-kr);-webkit-overflow-scrolling:touch;min-height:100vh;width:100vw;overflow:hidden;}
+button{font-family:inherit;cursor:pointer;border:none;outline:none;}
+input:not([type=checkbox]):not([type=radio]),select{font-family:inherit;outline:none;-webkit-appearance:none;box-sizing:border-box;}
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
+
+/* === 3탭 SHELL === */
+.shell{width:100vw;height:100vh;display:flex;overflow:hidden;position:relative;}
+.tab-track{display:flex;width:300vw;height:100%;transition:transform 0.3s cubic-bezier(0.4,0,0.2,1);will-change:transform;}
+.tab-panel{width:100vw;height:100vh;overflow-y:auto;-webkit-overflow-scrolling:touch;flex-shrink:0;display:flex;flex-direction:column;}
+.tab-track[data-tab="0"]{transform:translateX(0);}
+.tab-track[data-tab="1"]{transform:translateX(-100vw);}
+.tab-track[data-tab="2"]{transform:translateX(-200vw);}
+.swipe-hint{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:10;}
+.swipe-dot{width:6px;height:6px;border-radius:50%;background:var(--dim);transition:background 0.2s;}
+.swipe-dot.active{background:var(--green);}
+
+/* === 컨테이너 === */
+.container{display:flex;flex-direction:column;padding:10px;gap:10px;flex:1;}
+
+/* === 스플래시 === */
+.splash{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:9999;transition:opacity 0.6s ease;}
+.splash.fade-out{opacity:0;pointer-events:none;transition:opacity 1.2s ease;}
+.splash-hud{font-family:var(--font-mono);font-size:4rem;font-weight:900;color:var(--green);letter-spacing:10px;animation:splashGlow 1.2s ease-in-out;}
+.splash-sub{font-size:0.75rem;color:#fff;letter-spacing:4px;margin-top:12px;animation:splashFadeIn 1s ease 0.4s both;}
+@keyframes splashGlow{from{opacity:0;transform:scale(0.8)}to{opacity:1;transform:scale(1)}}
+@keyframes splashFadeIn{from{opacity:0}to{opacity:1}}
+
+/* === 동의 화면 === */
+.consent-screen{display:none;position:fixed;inset:0;background:var(--bg);z-index:8500;overflow-y:auto;}
+.consent-screen.open{display:block;}
+.consent-inner{max-width:480px;margin:0 auto;padding:30px 20px 60px;}
+.consent-logo{font-family:var(--font-mono);font-size:2.5rem;font-weight:900;color:var(--green);letter-spacing:8px;text-align:center;margin-bottom:4px;}
+.consent-sub{font-size:0.75rem;color:#aaa;letter-spacing:4px;text-align:center;margin-bottom:24px;}
+.consent-section{background:#0d0d0d;border:1px solid #1a1a1a;border-radius:var(--radius-md);padding:16px;margin-bottom:14px;}
+.consent-section-title{font-size:0.8rem;color:var(--green);font-weight:900;letter-spacing:1px;margin-bottom:10px;}
+.consent-section-body{font-size:0.75rem;color:#aaa;line-height:1.8;}
+.consent-checks{margin:20px 0;display:flex;flex-direction:column;gap:12px;}
+.consent-check{display:flex;align-items:center;gap:10px;font-size:0.82rem;color:#ccc;}
+.consent-check input[type=checkbox]{width:18px;height:18px;accent-color:var(--green);flex-shrink:0;}
+.consent-btn{width:100%;padding:16px;border-radius:var(--radius-md);font-size:1rem;font-weight:900;letter-spacing:2px;cursor:pointer;}
+.consent-btn.active{background:var(--green);color:#000;}
+.consent-btn.inactive{background:#222;color:#555;cursor:default;}
+
+/* === PIN 화면 === */
+.pin-screen{display:none;position:fixed;inset:0;background:var(--bg);z-index:8000;flex-direction:column;align-items:center;justify-content:center;}
+.pin-screen.open{display:flex;}
+.pin-logo{font-family:var(--font-mono);font-size:3rem;font-weight:900;color:var(--green);letter-spacing:10px;margin-bottom:8px;}
+.pin-subtitle{font-size:0.85rem;color:#aaa;letter-spacing:2px;margin-bottom:30px;}
+.pin-dots{display:flex;gap:12px;margin-bottom:40px;}
+.pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid #333;transition:all 0.15s;}
+.pin-dot.filled{background:var(--green);border-color:var(--green);}
+.pin-dot.error{background:var(--red);border-color:var(--red);}
+.pin-pad{display:grid;grid-template-columns:repeat(3,72px);gap:12px;}
+.pin-key{width:72px;height:72px;background:#111;border:1px solid #222;border-radius:50%;font-size:1.5rem;font-weight:700;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background 0.1s;}
+.pin-key:active{background:#222;}
+.pin-key.fn{font-size:0.7rem;color:#888;background:transparent;border-color:transparent;}
+.pin-msg{margin-top:20px;font-size:0.8rem;color:var(--red);min-height:1.5em;text-align:center;}
+
+/* === 헤더 === */
+.header-panel{display:flex;align-items:center;justify-content:center;position:relative;padding:4px 0;min-height:52px;}
+.header-center{text-align:center;}
+.hud-logo{font-family:var(--font-mono);font-size:2rem;font-weight:900;color:var(--green);letter-spacing:8px;line-height:1;}
+.date-weather-row{font-size:0.7rem;color:#888;margin-top:3px;display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;}
+.date-sep{color:#333;}
+.btn-reset{position:absolute;right:0;top:50%;transform:translateY(-50%);}
+.header-reset{background:transparent;border:1px solid #222;color:#555;border-radius:6px;padding:6px 10px;font-size:1rem;}
+
+/* === 타이머 카드 === */
+.timer-card{background:#0d0d0d;border:1px solid #1a1a1a;border-radius:var(--radius-md);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.timer-info{flex:1;min-width:0;}
+.timer-display{font-family:var(--font-mono);font-size:1.8rem;font-weight:900;color:#fff;letter-spacing:2px;line-height:1;}
+.timer-status{font-size:0.6rem;font-weight:900;letter-spacing:2px;margin-top:4px;}
+.status-total{color:#555;}
+.status-live{color:var(--green);}
+.status-rest{color:var(--orange);}
+.timer-actions-row{display:flex;gap:6px;align-items:center;flex-shrink:0;}
+.btn-mission{padding:8px 10px;background:transparent;border:1.5px solid #333;color:#666;border-radius:var(--radius-sm);font-size:0.7rem;font-weight:700;white-space:nowrap;}
+.btn-mission.active{border-color:var(--orange);color:var(--orange);}
+.btn-rest{padding:8px 10px;background:transparent;border:1.5px solid var(--orange);color:var(--orange);border-radius:var(--radius-sm);font-size:0.75rem;font-weight:900;min-width:44px;}
+.btn-rest.resting{background:var(--orange);color:#000;animation:restPulse 1.5s ease-in-out infinite;}
+@keyframes restPulse{0%,100%{opacity:1}50%{opacity:0.6}}
+.btn-toggle{padding:10px 16px;border-radius:var(--radius-sm);font-size:0.9rem;font-weight:900;letter-spacing:1px;min-width:64px;}
+.btn-start{background:var(--green);color:#000;}
+.btn-stop{background:var(--red);color:#fff;}
+
+/* === 히어로 카드 === */
+.hero-card{background:#0d0d0d;border:1px solid #1a1a1a;border-radius:var(--radius-md);padding:14px;position:relative;overflow:hidden;min-height:90px;display:flex;flex-direction:column;justify-content:center;}
+.pickup-area{display:none;position:absolute;top:10px;left:10px;align-items:center;gap:6px;}
+.pickup-area.visible{display:flex;}
+.pickup-indicator{font-size:0.7rem;font-weight:700;color:var(--green);}
+.pickup-area.warning .pickup-indicator{color:var(--red);animation:warnBlink 0.8s ease-in-out infinite;}
+@keyframes warnBlink{0%,100%{opacity:1}50%{opacity:0.3}}
+.pickup-time{font-family:var(--font-mono);font-size:0.8rem;color:#fff;}
+.mission-badge{position:absolute;top:10px;right:10px;background:var(--orange);color:#000;font-size:0.65rem;font-weight:900;padding:3px 8px;border-radius:10px;letter-spacing:1px;}
+.hero-place{width:100%;}
+.hero-place.empty{display:none;}
+.place-name{font-size:1.1rem;font-weight:900;color:#fff;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.place-memo-marquee{overflow:hidden;}
+.place-memo-marquee span{font-size:0.95rem;font-weight:900;color:var(--orange);display:inline-block;}
+.hero-empty{text-align:center;width:100%;}
+.hero-empty.hidden{display:none;}
+
+/* === 층수 버튼 === */
+.floor-scroll-wrap{position:relative;overflow:hidden;}
+.floor-scroll{display:flex;gap:6px;overflow-x:auto;padding:2px 0;scrollbar-width:none;-ms-overflow-style:none;}
+.floor-scroll::-webkit-scrollbar{display:none;}
+.floor-btn{flex-shrink:0;min-width:44px;padding:8px 12px;background:#111;border:1.5px solid #222;border-radius:var(--radius-sm);font-size:0.85rem;font-weight:900;color:#555;text-align:center;cursor:pointer;transition:all 0.15s;}
+.floor-btn.active{background:#001a0a;border-color:var(--green);color:var(--green);}
+.floor-fade-right{position:absolute;right:0;top:0;bottom:0;width:30px;background:linear-gradient(to right,transparent,var(--bg));pointer-events:none;}
+
+/* === 카운터 카드 === */
+.counter-card{background:#0d0d0d;border:1px solid #1a1a1a;border-radius:var(--radius-md);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;}
+.count-adjust-btn{width:40px;height:40px;border-radius:50%;background:#1a1a1a;border:1px solid #333;color:#fff;font-size:1.3rem;display:flex;align-items:center;justify-content:center;}
+.count-adjust-btn.mission{border-color:var(--green);color:var(--green);}
+.count-block{text-align:center;}
+.count-num{font-family:var(--font-mono);font-size:2rem;font-weight:900;color:#fff;line-height:1;}
+.count-num.mission{color:var(--green);text-shadow:0 0 10px var(--green);}
+.count-num.hourly{color:var(--orange);font-size:1.5rem;}
+.count-label{font-size:0.6rem;color:#555;letter-spacing:1px;margin-top:2px;}
+.count-label.mission{color:var(--green);}
+.count-label.hourly{color:var(--orange);}
+
+/* === 도착·픽업·드롭 === */
+.action-3btns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+.btn-arrive,.btn-pickup-new,.btn-drop-new{padding:14px 8px;border-radius:var(--radius-sm);font-size:0.95rem;font-weight:900;letter-spacing:1px;transition:all 0.1s;}
+.btn-arrive{background:transparent;border:2px solid #333;color:#666;}
+.btn-pickup-new{background:transparent;border:2px solid var(--orange);color:var(--orange);}
+.btn-drop-new{background:var(--green);border:2px solid var(--green);color:#000;}
+.btn-arrive.active{background:#1a1a00;border-color:var(--yellow);color:var(--yellow);}
+.btn-pickup-new.active{background:#1a0a00;box-shadow:0 0 8px var(--orange)44;}
+
+/* === 현위치 저장 === */
+.btn-locate{width:100%;padding:14px;background:var(--green);color:#000;border-radius:var(--radius-md);font-size:0.95rem;font-weight:900;letter-spacing:1px;}
+
+/* === 입력 패널 === */
+.input-panel{display:flex;flex-direction:column;gap:8px;}
+.place-input{width:100%;background:#0d0d0d;border:1px solid #1a1a1a;color:#fff;padding:12px;border-radius:var(--radius-sm);font-size:0.9rem;}
+.place-input::placeholder{color:#444;}
+.place-input:focus{border-color:#333;}
+.input-wrap{position:relative;}
+.scroll-placeholder{position:absolute;inset:0;padding:12px;font-size:0.85rem;color:#444;overflow:hidden;pointer-events:none;white-space:nowrap;}
+.scroll-placeholder span{display:inline-block;animation:marquee 18s linear infinite;}
+@keyframes marquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.scroll-placeholder.hidden{display:none;}
+.btn-save{width:100%;padding:12px;background:var(--orange);color:#000;border-radius:var(--radius-sm);font-size:0.9rem;font-weight:900;}
+
+/* === 4버튼 === */
+.action-btns{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;}
+.keymap-btn,.history-btn,.emergency-btn,.settings-btn{padding:12px 4px;border-radius:var(--radius-sm);font-size:0.78rem;font-weight:700;text-align:center;}
+.keymap-btn,.history-btn,.settings-btn{background:#111;border:1px solid #222;color:#fff;}
+.emergency-btn{background:#1a0000;border:1px solid var(--red);color:var(--red);}
+
+/* === 장소 목록 === */
+.place-list-area{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.place-item{background:#0d0d0d;border:1px solid #1a1a1a;border-left:3px solid var(--yellow);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;}
+.gps-btn{background:transparent;border:none;font-size:1.1rem;padding:2px 4px;cursor:pointer;}
+.edit-btn{padding:4px 10px;background:transparent;border:1px solid var(--green);color:var(--green);border-radius:6px;font-size:0.7rem;cursor:pointer;}
+.locate-feedback{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:700;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.copyright{font-size:0.6rem;color:#333;text-align:center;padding:10px 0 20px;}
+
+/* === 설정 페이지 === */
+.settings-page{display:none;position:fixed;inset:0;background:var(--bg);z-index:500;flex-direction:column;overflow-y:auto;}
+.settings-page.open{display:flex;}
+.settings-header{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid #222;position:sticky;top:0;background:var(--bg);z-index:10;}
+.settings-back{background:none;border:none;color:var(--green);font-size:0.9rem;font-weight:bold;}
+.settings-title{font-size:1rem;font-weight:900;color:#fff;letter-spacing:1px;}
+.settings-section{margin:14px;padding:16px;background:#111;border:1px solid #222;border-radius:var(--radius-md);}
+.settings-section-title{font-size:0.75rem;color:var(--green);font-weight:900;letter-spacing:2px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #222;}
+.settings-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #1a1a1a;}
+.settings-row:last-child{border-bottom:none;}
+.settings-row-label{font-size:0.82rem;color:#fff;}
+.settings-row-desc{font-size:0.65rem;color:#666;margin-top:2px;}
+.settings-preset-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;width:100%;margin-top:8px;}
+.settings-preset-grid-5{grid-template-columns:repeat(5,1fr);}
+.settings-preset-btn{padding:8px 4px;background:#1a1a1a;border:1px solid #222;border-radius:6px;color:#888;font-size:0.7rem;text-align:center;font-weight:700;}
+.settings-preset-btn.active{background:var(--green);color:#000;border-color:var(--green);}
+.settings-slider{width:100%;-webkit-appearance:none;height:6px;background:#222;border-radius:3px;outline:none;margin-top:8px;}
+.settings-slider::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;background:var(--green);border-radius:50%;}
+.settings-action-btn{width:100%;padding:12px;background:#222;border:1px solid #333;border-radius:var(--radius-sm);color:#fff;font-size:0.82rem;font-weight:700;margin-top:6px;text-align:left;display:flex;justify-content:space-between;align-items:center;cursor:pointer;}
+.settings-info-row{font-size:0.75rem;color:#aaa;padding:8px 0;display:flex;justify-content:space-between;}
+.settings-info-row a{color:var(--green);text-decoration:none;}
+
+/* === 시급 팝업 === */
+.wage-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:600;align-items:center;justify-content:center;}
+.wage-overlay.open{display:flex;}
+.wage-popup{background:#1a1a1a;border:1px solid var(--green);border-radius:var(--radius-lg);padding:24px;width:90%;max-width:360px;max-height:85vh;overflow-y:auto;}
+.wage-title{font-size:1rem;font-weight:900;color:#fff;margin-bottom:4px;text-align:center;}
+.wage-sub{font-size:0.75rem;color:#888;margin-bottom:16px;text-align:center;}
+.wage-input{width:100%;background:#222;border:1px solid #444;color:#fff;padding:12px;border-radius:var(--radius-sm);font-size:1.05rem;text-align:center;margin-bottom:8px;}
+.wage-input::placeholder{color:var(--dim);}
+.wage-row-label{display:block;font-size:0.7rem;color:#888;text-align:left;margin:4px 0;}
+.wage-total-display{background:linear-gradient(135deg,#001a0a,#0a0a0a);border:1px solid var(--green);color:var(--green);padding:14px;border-radius:var(--radius-sm);font-size:1.5rem;font-weight:900;text-align:center;margin-bottom:8px;}
+.wage-result{font-size:0.85rem;color:#ccc;margin-bottom:16px;min-height:2em;text-align:center;}
+.wage-result b{color:var(--green);font-size:1.1rem;}
+.wage-actions{display:flex;gap:8px;}
+.wage-btn{flex:1;padding:12px;border:none;border-radius:var(--radius-sm);font-weight:bold;font-size:0.85rem;cursor:pointer;}
+.wage-btn-save{background:var(--green);color:#000;}
+.wage-btn-rest{background:#333;color:#aaa;}
+.wage-divider{height:1px;background:#222;margin:12px 0 8px;}
+.wage-pf-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:12px;}
+.wage-pf-tab{padding:7px 4px;background:#1a1a1a;border:1px solid #333;border-radius:var(--radius-sm);color:#666;font-size:0.68rem;font-weight:700;text-align:center;position:relative;cursor:pointer;}
+.wage-pf-tab.active{background:#111;color:#fff;font-weight:900;}
+.wage-pf-dot{display:inline-block;width:5px;height:5px;border-radius:50%;position:absolute;top:4px;right:4px;}
+.wage-pf-inputs{margin-bottom:8px;}
+
+/* === 긴급연락처 === */
+.emergency-page{display:none;position:fixed;inset:0;background:var(--bg);z-index:500;flex-direction:column;overflow-y:auto;}
+.emergency-page.open{display:flex;}
+.emergency-header{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid #222;position:sticky;top:0;background:var(--bg);z-index:10;}
+.emergency-back{background:none;border:none;color:var(--green);font-size:0.9rem;font-weight:bold;}
+.emergency-title{font-size:1rem;font-weight:900;color:#fff;}
+.emergency-list{padding:14px;display:flex;flex-direction:column;gap:16px;padding-bottom:80px;}
+.emg-item{display:flex;align-items:center;gap:10px;background:#121212;border:1px solid #222;border-radius:var(--radius-md);padding:12px 14px;border-left:4px solid #888;}
+
+/* === 커스텀 모달 === */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9000;align-items:center;justify-content:center;padding:20px;}
+.modal-overlay.open{display:flex;}
+.modal-box{background:#1a1a1a;border:1px solid #333;border-radius:var(--radius-lg);padding:22px;width:100%;max-width:340px;max-height:80vh;overflow-y:auto;}
+.modal-box.confirm{border-color:var(--green);}
+.modal-box.warn{border-color:var(--red);}
+.modal-box.info{border-color:var(--orange);}
+.modal-icon{font-size:1.8rem;text-align:center;margin-bottom:8px;}
+.modal-title{font-size:1rem;font-weight:900;color:#fff;text-align:center;margin-bottom:10px;}
+.modal-body{font-size:0.82rem;color:#ccc;line-height:1.6;margin-bottom:18px;white-space:pre-wrap;word-break:keep-all;text-align:center;}
+.modal-actions{display:flex;gap:8px;}
+.modal-btn{flex:1;padding:12px;border:none;border-radius:var(--radius-sm);font-weight:bold;font-size:0.85rem;cursor:pointer;}
+.modal-btn-primary{background:var(--green);color:#000;}
+.modal-btn-danger{background:var(--red);color:#fff;}
+.modal-btn-cancel{background:#333;color:#aaa;}
+
+/* === 히트맵 칩 === */
+.hm-chip{padding:5px 10px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:14px;color:#888;font-size:0.7rem;font-family:var(--font-mono);cursor:pointer;}
+.hm-chip.on{border-color:var(--green);color:var(--green);background:#001a0a;}
+.hm-chip.clear{border-color:var(--red);color:var(--red);}
+
+/* === 매니저 v3 === */
+.mgr-range-tabs{display:flex;gap:6px;padding:10px 14px 0;}
+.mgr-range-tab{flex:1;padding:9px 4px;background:#1a1a1a;border:1px solid #222;border-radius:var(--radius-sm);color:#666;font-size:0.75rem;font-weight:700;text-align:center;cursor:pointer;}
+.mgr-range-tab.active{background:var(--green);color:#000;border-color:var(--green);}
+.mgr-section{margin:10px 14px 0;padding:14px;background:#0d0d0d;border:1px solid #1a1a1a;border-radius:var(--radius-md);}
+.mgr-section-title{font-size:0.72rem;color:var(--green);font-weight:900;letter-spacing:1.5px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #1a1a1a;}
+.mgr-empty{text-align:center;color:var(--dim);font-size:0.8rem;padding:20px 0;}
+.mgr-summary{margin:12px 14px 0;padding:18px;background:linear-gradient(135deg,#0d2a1a,#0a0a0a);border:1px solid var(--green);border-radius:var(--radius-lg);text-align:center;}
+.mgr-summary-label{font-size:0.65rem;color:var(--green);font-weight:900;letter-spacing:2px;margin-bottom:6px;}
+.mgr-summary-income{font-size:1.8rem;font-weight:900;color:#fff;}
+.mgr-summary-sub{font-size:0.72rem;color:#aaa;margin-top:6px;display:flex;justify-content:center;gap:6px;flex-wrap:wrap;}
+.mgr-sep{color:#333;}
+.mgr-time-bar{display:flex;height:12px;border-radius:6px;overflow:hidden;background:#1a1a1a;margin-bottom:10px;}
+.mgr-time-seg{transition:width 0.4s;}
+.mgr-time-seg.active{background:var(--green);}
+.mgr-time-seg.rest{background:var(--orange);}
+.mgr-time-seg.idle{background:#ff3e3e55;}
+.mgr-time-seg.cooldown{background:#1a1a1a;}
+.mgr-time-legend{display:flex;gap:12px;flex-wrap:wrap;}
+.mgr-tl-item{display:flex;align-items:center;gap:5px;font-size:0.72rem;color:#aaa;}
+.mgr-tl-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.mgr-tl-dot.active{background:var(--green);}
+.mgr-tl-dot.rest{background:var(--orange);}
+.mgr-tl-dot.idle{background:var(--red);}
+.mgr-idle-ratio{background:#ff3e3e22;color:var(--red);border-radius:4px;padding:1px 5px;font-size:0.65rem;font-weight:900;}
+.mgr-kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 14px 0;}
+.mgr-kpi-card{background:#111;border:1px solid #222;border-radius:var(--radius-sm);padding:10px 8px;text-align:center;}
+.mgr-kpi-card.green{border-color:var(--green);background:#001a0a;}
+.mgr-kpi-label{font-size:0.6rem;color:#666;margin-bottom:5px;white-space:nowrap;}
+.mgr-kpi-val{font-size:0.9rem;font-weight:900;color:#fff;}
+.mgr-kpi-card.green .mgr-kpi-val{color:var(--green);}
+.mgr-kpi-unit{font-size:0.6rem;color:#666;font-weight:400;}
+.mgr-platform-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.mgr-platform-label{font-size:0.72rem;font-weight:700;min-width:52px;}
+.mgr-platform-bar-wrap{flex:1;height:20px;background:#1a1a1a;border-radius:4px;overflow:hidden;}
+.mgr-platform-bar{height:100%;border-radius:4px;position:relative;border:1px solid transparent;min-width:4px;}
+.mgr-platform-fill{height:100%;border-radius:4px 0 0 4px;min-width:2px;}
+.mgr-platform-val{font-size:0.72rem;color:#ccc;font-weight:700;min-width:52px;text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:2px;}
+.mgr-mission-badge{font-size:0.6rem;color:var(--orange);}
+.mgr-count-badge{font-size:0.6rem;color:var(--dim);}
+.mgr-bars{display:flex;align-items:flex-end;gap:5px;height:100px;}
+.mgr-bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;height:100%;justify-content:flex-end;}
+.mgr-bar{width:100%;background:linear-gradient(180deg,var(--green),#006b1c);border-radius:3px 3px 0 0;min-height:2px;}
+.mgr-bar.empty{background:#1a1a1a;}
+.mgr-bar-val{font-size:0.55rem;color:#ccc;font-weight:700;}
+.mgr-bar-label{font-size:0.6rem;color:#555;}
+.mgr-matrix{width:100%;border-collapse:collapse;font-size:0.62rem;}
+.mgr-matrix th{color:#555;font-weight:700;padding:4px 2px;text-align:center;font-size:0.58rem;}
+.mgr-matrix td{padding:5px 2px;text-align:center;border-radius:3px;font-size:0.65rem;font-weight:700;min-width:30px;}
+.mgr-matrix-day{color:#666!important;background:transparent!important;}
+.mgr-dist-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.mgr-dist-label{font-size:0.7rem;color:#888;min-width:80px;}
+.mgr-dist-bar-wrap{flex:1;height:16px;background:#1a1a1a;border-radius:4px;overflow:hidden;}
+.mgr-dist-bar{height:100%;border-radius:4px;min-width:3px;}
+.mgr-dist-val{font-size:0.72rem;font-weight:700;min-width:28px;text-align:right;}
+.mgr-prediction{background:linear-gradient(135deg,#1a0d00,#0a0a0a);border-color:var(--orange);}
+.mgr-pred-main{font-size:1.5rem;font-weight:900;color:var(--orange);text-align:center;margin-bottom:6px;}
+.mgr-pred-sub{font-size:0.7rem;color:#888;text-align:center;}
+.mgr-records{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.mgr-record-item{background:#111;border:1px solid #222;border-radius:var(--radius-sm);padding:10px;text-align:center;}
+.mgr-record-label{font-size:0.65rem;color:#666;margin-bottom:4px;}
+.mgr-record-val{font-size:0.95rem;font-weight:900;color:var(--green);}
+.mgr-record-date{font-size:0.6rem;color:#444;margin-top:4px;}
+.mgr-log-item{background:#111;border:1px solid #1a1a1a;border-radius:var(--radius-sm);padding:12px;margin-bottom:8px;}
+.mgr-log-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.mgr-log-date{font-size:0.72rem;color:#666;display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
+.mgr-log-income{font-size:1rem;font-weight:900;color:#fff;}
+.mgr-log-row{font-size:0.7rem;color:#888;display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;}
+.mgr-pf-badge{display:inline-block;border:1px solid;border-radius:10px;padding:1px 6px;font-size:0.6rem;font-weight:700;}
+#gpsWarning{position:fixed;top:0;left:0;right:0;padding:6px;background:rgba(255,62,62,0.9);color:#fff;font-size:0.7rem;font-weight:bold;text-align:center;z-index:900;}
+/* ============================================================
+   hudpro8 홈 UI 적용 — style.css 하단에 추가
+   ============================================================ */
+
+/* ── HUD 탭 레이아웃: 고정상단 + 스크롤 영역 분리 ── */
+#hudTab {
+    overflow-y: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+.hud-fixed-top {
+    flex-shrink: 0;
+    background: #000;
+    border-bottom: 1px solid #1a1a1a;
+    z-index: 10;
+}
+.hud-scroll-area {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 60px;
+}
+
+
+/* ── 타이머 영역 (hudpro8 스타일) ── */
+.hud-timer-area {
+    padding: 12px 14px 14px;
+}
+.hud-timer-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+.hud-timer-display {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* WORK / MISSION 모드 토글 버튼 */
+.mode-group {
+    display: flex;
+    background: #0a0a0a;
+    padding: 3px;
+    border-radius: 9px;
+    border: 1px solid #1a1a1a;
+    gap: 2px;
+}
+.mode-btn {
+    background: none;
+    border: none;
+    color: #444;
+    padding: 7px 18px;
+    border-radius: 7px;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 1px;
+    transition: all 0.2s;
+    font-family: var(--font-mono);
+}
+.mode-btn.active-work {
+    background: #111;
+    color: var(--green);
+    box-shadow: 0 0 6px rgba(0,255,65,0.15);
+}
+.mode-btn.active-mission {
+    background: #111;
+    color: var(--yellow);
+    box-shadow: 0 0 6px rgba(254,229,0,0.15);
+}
+
+/* START / STOP 버튼 (hud-start-btn 래퍼) */
+.hud-start-btn {
+    padding: 9px 22px;
+    border-radius: 9px;
+    font-size: 13px;
+    font-weight: 900;
+    letter-spacing: 1px;
+    min-width: 84px;
+    font-family: var(--font-mono);
+    /* btn-start / btn-stop 색상 기존 스타일 그대로 재활용 */
+}
+
+/* RESET 버튼 */
+.hud-reset-btn {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid #1a1a1a;
+    color: #555;
+    padding: 6px 10px;
+    border-radius: 7px;
+    font-size: 10px;
+    font-weight: 700;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    line-height: 1.5;
+    cursor: pointer;
+}
+
+/* 타이머 숫자 */
+.hud-timer-val {
+    font-family: var(--font-mono);
+    font-size: 2.3rem;
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: 2px;
+    line-height: 1;
+}
+
+
+/* ── 속도 카드 (hudpro8 스타일 히어로) ── */
+.speed-card {
+    background: #0d0d0d;
+    border: 1px solid #1a1a1a;
+    border-radius: var(--radius-lg);
+    height: 165px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+/* 좌상단 상태 배지 */
+.hero-status-badge {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    font-size: 12px;
+    font-weight: 900;
+    color: var(--yellow);
+    letter-spacing: 0.5px;
+    transition: color 0.3s;
+}
+.hero-status-badge.live    { color: var(--green); }
+.hero-status-badge.mission { color: var(--orange); }
+.hero-status-badge.resting { color: var(--orange); }
+
+/* 우상단 미션 배지 */
+.mission-badge-top {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    font-size: 10px;
+    font-weight: 900;
+    color: var(--yellow);
+    background: rgba(254,229,0,0.1);
+    border: 1px solid rgba(254,229,0,0.4);
+    border-radius: 20px;
+    padding: 3px 9px;
+    letter-spacing: 1px;
+}
+
+/* 속도 숫자 */
+.speed-num {
+    font-family: var(--font-mono);
+    font-size: 4rem;
+    font-weight: 900;
+    color: var(--green);
+    line-height: 1;
+    transition: color 0.3s;
+}
+.speed-unit-label {
+    font-size: 11px;
+    color: #555;
+    margin-top: 5px;
+    font-weight: 700;
+    letter-spacing: 3px;
+}
+
+/* 픽업 진행 인디케이터 (속도카드 내 좌하단) */
+.speed-card .pickup-area {
+    position: absolute;
+    bottom: 12px;
+    left: 14px;
+}
+
+/* 근접 장소 표시 (속도카드 내 하단) */
+.speed-card-place {
+    position: absolute;
+    bottom: 12px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    padding: 0 14px;
+}
+.speed-card-place.hidden { display: none; }
+.speed-card-place .place-name {
+    font-size: 12px;
+    font-weight: 900;
+    color: #fff;
+}
+.speed-card-place .place-memo-marquee span {
+    font-size: 11px;
+    color: var(--orange);
+}
+
+/* 미션 버튼 활성 상태 (4버튼 행 내 #missionBtn) */
+#missionBtn.active {
+    background: rgba(254,229,0,0.1);
+    border-color: var(--yellow) !important;
+    color: var(--yellow) !important;
+}
