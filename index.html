@@ -658,8 +658,13 @@ async function acceptConsent() {
     if (!document.getElementById('chkLocation').checked
         || !document.getElementById('chkPrivacy').checked
         || !document.getElementById('chkTerms').checked) return;
-    await HudDB.settings.set('consent', 'agreed');
-    await HudDB.settings.set('consentDate', new Date().toISOString());
+    try {
+        if (!HudDB._db) await HudDB.open();
+        await HudDB.settings.set('consent', 'agreed');
+        await HudDB.settings.set('consentDate', new Date().toISOString());
+    } catch(e) {
+        console.warn('[Consent] DB 저장 실패, 계속 진행:', e);
+    }
     document.getElementById('consentScreen').classList.remove('open');
     HudCommon.showPinScreen();
 }
